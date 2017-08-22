@@ -95,6 +95,7 @@ void WS2812FX::setMode(uint8_t m) {
   _counter_mode_step = 0;
   _mode_last_call_time = 0;
   _mode_index = constrain(m, 0, MODE_COUNT-1);
+  _sub_mode_index = 0;
   _mode_color = _color;
   Adafruit_NeoPixel::setBrightness(_brightness);
   //strip_off();
@@ -128,6 +129,16 @@ void WS2812FX::setColor(uint32_t c) {
   _counter_mode_step = 0;
   _mode_last_call_time = 0;
   _mode_color = _color;
+  Adafruit_NeoPixel::setBrightness(_brightness);
+  //strip_off();
+}
+
+void WS2812FX::setColor2(uint32_t c) {
+  _color2 = c;
+  _counter_mode_call = 0;
+  _counter_mode_step = 0;
+  _mode_last_call_time = 0;
+  _mode_color = _color2;
   Adafruit_NeoPixel::setBrightness(_brightness);
   //strip_off();
 }
@@ -1221,4 +1232,94 @@ void WS2812FX::mode_fire_flicker_int(int rev_intensity)
     }
     Adafruit_NeoPixel::show();
     _mode_delay = 10 + ((500 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+}
+
+/* CUSTOM EFFECTS FOR CERNWALL */
+
+/*
+ * Custom Running lights effect with smooth sine transition.
+ */
+void WS2812FX::mode_cernwall_1(void) {
+  uint8_t r = ((_color >> 16) & 0xFF);
+  uint8_t g = ((_color >> 8) & 0xFF);
+  uint8_t b = (_color & 0xFF);
+
+  for(uint16_t i=0; i < _led_count; i++) {
+    if ((i < 7) || (i > 52 && i < 68)) {
+        Adafruit_NeoPixel::setPixelColor(i, 255,200,50);
+    } else {
+        int s = (sin(i+_counter_mode_call) * 127) + 128;
+        Adafruit_NeoPixel::setPixelColor(i, (((uint32_t)(r * s)) / 255), (((uint32_t)(g * s)) / 255), (((uint32_t)(b * s)) / 255));
+    }
+  }
+
+  Adafruit_NeoPixel::show();
+
+  _mode_delay = 35 + ((350 * (uint32_t)(SPEED_MAX - _speed)) / SPEED_MAX);
+}
+
+
+/*
+ * Lights all LEDs after each other up. Then turns them in
+ * that order off. Repeat.
+ */
+void WS2812FX::mode_cernwall_2(void) {
+  if (_sub_mode_index == 0) {
+      if(_counter_mode_step < _led_count) {
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step, _color);
+      } else {
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 0);
+      }
+  }
+  else if (_sub_mode_index == 1) {
+      //WS2812FX::setSpeed(150);
+      if(_counter_mode_step < _led_count) {
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step, 255,200,50);
+      } else {
+        // Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 0);
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 5111584);
+      }
+  }
+  else if (_sub_mode_index == 2) {
+      //WS2812FX::setSpeed(150);
+//      if(_counter_mode_step < _led_count) {
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step, _color);
+//      } else {
+//        Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 0);
+//      }
+  }
+  if (_sub_mode_index > 1) {
+      WS2812FX::setColor(5111584);
+      WS2812FX::setMode(FX_MODE_CERNWALL_1);
+  }
+  Adafruit_NeoPixel::show();
+  if (_counter_mode_step >= (_led_count * 2 - 1)) {  
+    _sub_mode_index++;
+    if (_sub_mode_index == 1) {
+      WS2812FX::setSpeed(150);
+    }
+    
+    Serial.println(_sub_mode_index);
+  }
+  _counter_mode_step = (_counter_mode_step + 1) % (_led_count * 2);
+
+  _mode_delay = 5 + ((50 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
+}
+
+/*
+ * Lights all LEDs after each other up. Then turns them in
+ * that order off. Repeat.
+ */
+ // NOT IN USE
+void WS2812FX::mode_cernwall_3(void) {
+  if(_counter_mode_step < _led_count) {
+    Adafruit_NeoPixel::setPixelColor(_counter_mode_step, _color);
+  } else {
+    //Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 0);
+    Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 1004324);
+  }
+  Adafruit_NeoPixel::show();
+  _counter_mode_step = (_counter_mode_step + 1) % (_led_count * 2);
+
+  _mode_delay = 5 + ((50 * (uint32_t)(SPEED_MAX - _speed)) / _led_count);
 }

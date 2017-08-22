@@ -36,8 +36,10 @@
   
   CHANGELOG
   2016-11-26 initial version
+  2017-08-09 CernWall changes
   
 */
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <WS2812FX.h>
@@ -45,31 +47,34 @@
 #include "index.html.h"
 #include "main.js.h"
 
-#define WIFI_SSID "YOURSSID"
-#define WIFI_PASSWORD "YOURPASSWORD"
-
-//#define STATIC_IP                       // uncomment for static IP, set IP below
-#ifdef STATIC_IP
-  IPAddress ip(192,168,0,123);
-  IPAddress gateway(192,168,0,1);
-  IPAddress subnet(255,255,255,0);
-#endif
+// settings_example.h contains all configuration you have to define
+// Copy it to settings.h and make your definitions
+#include "settings.h"
 
 // QUICKFIX...See https://github.com/esp8266/Arduino/issues/263
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
 
-#define LED_PIN 2                       // 0 = GPIO0, 2=GPIO2
-#define LED_COUNT 24
+#define LED_PIN D5                       // 0 = GPIO0, 2=GPIO2
+#define LED_PIN2 D6                       // 0 = GPIO0, 2=GPIO2
+#define LED_PIN3 D7                       // 0 = GPIO0, 2=GPIO2
+#define LED_PIN4 D8                       // 0 = GPIO0, 2=GPIO2
+
+#define LED_COUNT 90
+#define LED_COUNT2 90
+#define LED_COUNT3 90
+#define LED_COUNT4 90
 
 #define WIFI_TIMEOUT 30000              // checks WiFi every ...ms. Reset after this time, if WiFi cannot reconnect.
 #define HTTP_PORT 80
 
-#define DEFAULT_COLOR 0xFF5900
-#define DEFAULT_BRIGHTNESS 255
+// #define DEFAULT_COLOR 0xFF5900
+// #define DEFAULT_COLOR 0x9DC94D
+#define DEFAULT_COLOR 0x4dff20
+#define DEFAULT_BRIGHTNESS 100
 #define DEFAULT_SPEED 200
-#define DEFAULT_MODE FX_MODE_STATIC
-
+#define DEFAULT_MODE FX_MODE_CERNWALL_1
+// #define DEFAULT_MODE FX_MODE_DUAL_SCAN
 #define BRIGHTNESS_STEP 15              // in/decrease brightness by this amount per click
 #define SPEED_STEP 10                   // in/decrease brightness by this amount per click
 
@@ -77,10 +82,13 @@ unsigned long last_wifi_check_time = 0;
 String modes = "";
 
 WS2812FX ws2812fx = WS2812FX(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+WS2812FX ws2812fx2 = WS2812FX(LED_COUNT2, LED_PIN2, NEO_GRB + NEO_KHZ800);
+WS2812FX ws2812fx3 = WS2812FX(LED_COUNT3, LED_PIN3, NEO_GRB + NEO_KHZ800);
+WS2812FX ws2812fx4 = WS2812FX(LED_COUNT4, LED_PIN4, NEO_GRB + NEO_KHZ800);
 ESP8266WebServer server = ESP8266WebServer(HTTP_PORT);
 
 
-void setup(){
+void setup() {
   Serial.begin(115200);
   Serial.println();
   Serial.println();
@@ -90,6 +98,7 @@ void setup(){
   modes_setup();
 
   Serial.println("WS2812FX setup");
+  //ws2812fx = set_ws(ws2812fx);
   ws2812fx.init();
   ws2812fx.setMode(DEFAULT_MODE);
   ws2812fx.setColor(DEFAULT_COLOR);
@@ -97,6 +106,28 @@ void setup(){
   ws2812fx.setBrightness(DEFAULT_BRIGHTNESS);
   ws2812fx.start();
 
+  ws2812fx2.init();
+  ws2812fx2.setMode(DEFAULT_MODE);
+  ws2812fx2.setColor(DEFAULT_COLOR);
+  ws2812fx2.setSpeed(DEFAULT_SPEED);
+  ws2812fx2.setBrightness(DEFAULT_BRIGHTNESS);
+  ws2812fx2.start();
+
+  ws2812fx3.init();
+  ws2812fx3.setMode(DEFAULT_MODE);
+  ws2812fx3.setColor(DEFAULT_COLOR);
+  ws2812fx3.setSpeed(DEFAULT_SPEED);
+  ws2812fx3.setBrightness(DEFAULT_BRIGHTNESS);
+  ws2812fx3.start();
+
+  ws2812fx4.init();
+  ws2812fx4.setMode(DEFAULT_MODE);
+  ws2812fx4.setColor(DEFAULT_COLOR);
+  ws2812fx4.setSpeed(DEFAULT_SPEED);
+  ws2812fx4.setBrightness(DEFAULT_BRIGHTNESS);
+  ws2812fx4.start();
+
+  return;
   Serial.println("Wifi setup");
   wifi_setup();
  
@@ -118,6 +149,9 @@ void loop() {
 
   server.handleClient();
   ws2812fx.service();
+  ws2812fx2.service();
+  ws2812fx3.service();
+  ws2812fx4.service();
 
   if(now - last_wifi_check_time > WIFI_TIMEOUT) {
     Serial.print("Checking WiFi... ");
@@ -125,12 +159,24 @@ void loop() {
       Serial.println("WiFi connection lost. Reconnecting...");
       wifi_setup();
     } else {
-      Serial.println("OK");
+      Serial.print("OK, IP ");
+      Serial.println(WiFi.localIP());
     }
     last_wifi_check_time = now;
+    Serial.print("Free heap: ");
+    Serial.println(ESP.getFreeHeap(),DEC);    
   }
 }
 
+WS2812FX set_ws(WS2812FX ws) {
+  ws.init();
+  ws.setMode(DEFAULT_MODE);
+  ws.setColor(DEFAULT_COLOR);
+  ws.setSpeed(DEFAULT_SPEED);
+  ws.setBrightness(DEFAULT_BRIGHTNESS);
+  ws.start();
+  return ws;
+}
 
 
 /*
@@ -205,33 +251,91 @@ void srv_handle_modes() {
 
 void srv_handle_set() {
   for (uint8_t i=0; i < server.args(); i++){
+    Serial.print("set ");
+    Serial.print(server.argName(i));
+    Serial.print(" = ");
+    Serial.println(server.arg(i));
     if(server.argName(i) == "c") {
       uint32_t tmp = (uint32_t) strtol(&server.arg(i)[0], NULL, 16);
       if(tmp >= 0x000000 && tmp <= 0xFFFFFF) {
         ws2812fx.setColor(tmp);
+        ws2812fx2.setColor(tmp);
+        ws2812fx3.setColor(tmp);
+        ws2812fx4.setColor(tmp);
       }
     }
+
+    if(server.argName(i) == "c2") {
+      uint32_t tmp = (uint32_t) strtol(&server.arg(i)[0], NULL, 16);
+      if(tmp >= 0x000000 && tmp <= 0xFFFFFF) {
+        ws2812fx.setColor2(tmp);
+        ws2812fx2.setColor2(tmp);
+        ws2812fx3.setColor2(tmp);
+        ws2812fx4.setColor2(tmp);
+      }
+    }
+
 
     if(server.argName(i) == "m") {
       uint8_t tmp = (uint8_t) strtol(&server.arg(i)[0], NULL, 10);
       ws2812fx.setMode(tmp % ws2812fx.getModeCount());
+      ws2812fx2.setMode(tmp % ws2812fx.getModeCount());
+      ws2812fx3.setMode(tmp % ws2812fx.getModeCount());
+      ws2812fx4.setMode(tmp % ws2812fx.getModeCount());
     }
 
     if(server.argName(i) == "b") {
       if(server.arg(i)[0] == '-') {
         ws2812fx.decreaseBrightness(BRIGHTNESS_STEP);
+        ws2812fx2.decreaseBrightness(BRIGHTNESS_STEP);
+        ws2812fx3.decreaseBrightness(BRIGHTNESS_STEP);
+        ws2812fx4.decreaseBrightness(BRIGHTNESS_STEP);
       } else {
         ws2812fx.increaseBrightness(BRIGHTNESS_STEP);
+        ws2812fx2.increaseBrightness(BRIGHTNESS_STEP);
+        ws2812fx3.increaseBrightness(BRIGHTNESS_STEP);
+        ws2812fx4.increaseBrightness(BRIGHTNESS_STEP);
       }
     }
+
+    if(server.argName(i) == "bs") {
+      uint8_t tmp = (uint8_t) strtol(&server.arg(i)[0], NULL, 10);
+      ws2812fx.setBrightness(tmp);
+      ws2812fx2.setBrightness(tmp);
+      ws2812fx3.setBrightness(tmp);
+      ws2812fx4.setBrightness(tmp);
+    }
+
 
     if(server.argName(i) == "s") {
       if(server.arg(i)[0] == '-') {
         ws2812fx.decreaseSpeed(SPEED_STEP);
+        ws2812fx2.decreaseSpeed(SPEED_STEP);
+        ws2812fx3.decreaseSpeed(SPEED_STEP);
+        ws2812fx4.decreaseSpeed(SPEED_STEP);
       } else {
         ws2812fx.increaseSpeed(SPEED_STEP);
+        ws2812fx2.increaseSpeed(SPEED_STEP);
+        ws2812fx3.increaseSpeed(SPEED_STEP);
+        ws2812fx4.increaseSpeed(SPEED_STEP);
       }
     }
+
+    if(server.argName(i) == "t") {
+      uint8_t tmp = (uint8_t) strtol(&server.arg(i)[0], NULL, 10);
+      ws2812fx.setSpeed(tmp);
+      ws2812fx2.setSpeed(tmp);
+      ws2812fx3.setSpeed(tmp);
+      ws2812fx4.setSpeed(tmp);
+    }
+
   }
+  /* 
+   *  Return current values in addition to OK
+    ws2812fx._mode_index
+    ws2812fx._speed
+    ws2812fx._brightness
+    ws2812fx._color
+   */
   server.send(200, "text/plain", "OK");
 }

@@ -66,7 +66,7 @@
 #define BRIGHTNESS_MIN 0
 #define BRIGHTNESS_MAX 255
 
-#define MODE_COUNT 47
+#define MODE_COUNT 50
 
 #define FX_MODE_STATIC                   0
 #define FX_MODE_BLINK                    1
@@ -115,6 +115,9 @@
 #define FX_MODE_MERRY_CHRISTMAS         44
 #define FX_MODE_FIRE_FLICKER            45
 #define FX_MODE_FIRE_FLICKER_SOFT       46
+#define FX_MODE_CERNWALL_1              47
+#define FX_MODE_CERNWALL_2              48
+#define FX_MODE_CERNWALL_3              49
 
 
 class WS2812FX : public Adafruit_NeoPixel {
@@ -171,6 +174,9 @@ class WS2812FX : public Adafruit_NeoPixel {
       _mode[FX_MODE_MERRY_CHRISTMAS]       = &WS2812FX::mode_merry_christmas;
       _mode[FX_MODE_FIRE_FLICKER]          = &WS2812FX::mode_fire_flicker;
       _mode[FX_MODE_FIRE_FLICKER_SOFT]     = &WS2812FX::mode_fire_flicker_soft;
+      _mode[FX_MODE_CERNWALL_1]            = &WS2812FX::mode_cernwall_1;
+      _mode[FX_MODE_CERNWALL_2]            = &WS2812FX::mode_cernwall_2;
+      _mode[FX_MODE_CERNWALL_3]            = &WS2812FX::mode_cernwall_3;
 
       _name[FX_MODE_STATIC]                = "Static";
       _name[FX_MODE_BLINK]                 = "Blink";
@@ -219,6 +225,9 @@ class WS2812FX : public Adafruit_NeoPixel {
       _name[FX_MODE_MERRY_CHRISTMAS]       = "Merry Christmas";
       _name[FX_MODE_FIRE_FLICKER]          = "Fire Flicker";
       _name[FX_MODE_FIRE_FLICKER_SOFT]     = "Fire Flicker (soft)";
+      _name[FX_MODE_CERNWALL_1]            = "CernWall 1: Running Lights ";
+      _name[FX_MODE_CERNWALL_2]            = "CernWall 2: Color Wipe ";
+      _name[FX_MODE_CERNWALL_3]            = "CernWall 2: Running Lights 2 ";
       
 
       _mode_index = DEFAULT_MODE;
@@ -229,6 +238,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       _mode_last_call_time = 0;
       _mode_delay = 0;
       _color = DEFAULT_COLOR;
+//      _color2 = DEFAULT_COLOR;
       _mode_color = DEFAULT_COLOR;
       _counter_mode_call = 0;
       _counter_mode_step = 0;
@@ -245,6 +255,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       decreaseSpeed(uint8_t s),
       setColor(uint8_t r, uint8_t g, uint8_t b),
       setColor(uint32_t c),
+      setColor2(uint32_t c),
       setBrightness(uint8_t b),
       increaseBrightness(uint8_t s),
       decreaseBrightness(uint8_t s),
@@ -316,7 +327,10 @@ class WS2812FX : public Adafruit_NeoPixel {
       mode_merry_christmas(void),
       mode_fire_flicker(void),
       mode_fire_flicker_soft(void),
-      mode_fire_flicker_int(int);
+      mode_fire_flicker_int(int),
+      mode_cernwall_1(void),
+      mode_cernwall_2(void),
+      mode_cernwall_3(void);
 
     boolean
       _running,
@@ -325,6 +339,7 @@ class WS2812FX : public Adafruit_NeoPixel {
     uint8_t
       get_random_wheel_index(uint8_t),
       _mode_index,
+      _sub_mode_index,
       _speed,
       _brightness;
 
@@ -334,6 +349,7 @@ class WS2812FX : public Adafruit_NeoPixel {
     uint32_t
       color_wheel(uint8_t),
       _color,
+      _color2,
       _counter_mode_call,
       _counter_mode_step,
       _mode_color,
