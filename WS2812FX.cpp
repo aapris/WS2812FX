@@ -143,6 +143,16 @@ void WS2812FX::setColor2(uint32_t c) {
   //strip_off();
 }
 
+void WS2812FX::setColor3(uint32_t c) {
+  _color3 = c;
+  _counter_mode_call = 0;
+  _counter_mode_step = 0;
+  _mode_last_call_time = 0;
+  _mode_color = _color3;
+  Adafruit_NeoPixel::setBrightness(_brightness);
+  //strip_off();
+}
+
 void WS2812FX::setBrightness(uint8_t b) {
   _brightness = constrain(b, BRIGHTNESS_MIN, BRIGHTNESS_MAX);
   Adafruit_NeoPixel::setBrightness(_brightness);
@@ -1274,10 +1284,12 @@ void WS2812FX::mode_cernwall_2(void) {
   else if (_sub_mode_index == 1) {
       //WS2812FX::setSpeed(150);
       if(_counter_mode_step < _led_count) {
-        Adafruit_NeoPixel::setPixelColor(_counter_mode_step, 255,200,50);
+        // Adafruit_NeoPixel::setPixelColor(_counter_mode_step, 255,200,50);
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step, _color2);
       } else {
         // Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 0);
-        Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 5111584);
+        // Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, 5111584);
+        Adafruit_NeoPixel::setPixelColor(_counter_mode_step - _led_count, _color3);
       }
   }
   else if (_sub_mode_index == 2) {
@@ -1296,6 +1308,9 @@ void WS2812FX::mode_cernwall_2(void) {
   if (_counter_mode_step >= (_led_count * 2 - 1)) {  
     _sub_mode_index++;
     if (_sub_mode_index == 1) {
+      WS2812FX::setSpeed(200);
+    }
+    if (_sub_mode_index == 2) {
       WS2812FX::setSpeed(150);
     }
     

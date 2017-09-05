@@ -127,7 +127,6 @@ void setup() {
   ws2812fx4.setBrightness(DEFAULT_BRIGHTNESS);
   ws2812fx4.start();
 
-  return;
   Serial.println("Wifi setup");
   wifi_setup();
  
@@ -275,6 +274,15 @@ void srv_handle_set() {
       }
     }
 
+    if(server.argName(i) == "c3") {
+      uint32_t tmp = (uint32_t) strtol(&server.arg(i)[0], NULL, 16);
+      if(tmp >= 0x000000 && tmp <= 0xFFFFFF) {
+        ws2812fx.setColor3(tmp);
+        ws2812fx2.setColor3(tmp);
+        ws2812fx3.setColor3(tmp);
+        ws2812fx4.setColor3(tmp);
+      }
+    }
 
     if(server.argName(i) == "m") {
       uint8_t tmp = (uint8_t) strtol(&server.arg(i)[0], NULL, 10);
